@@ -6,55 +6,51 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // Initialize error from sessionStorage
-  const [error, setError] = useState(() => {
-    const savedError = sessionStorage.getItem('loginError');
-    return savedError || '';
-  });
-
-  useEffect(() => {
-    console.log('Login component mounted');
-    
-    // Clear error from sessionStorage when component mounts
-    return () => {
-      console.log('Login component unmounting');
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('Error state changed:', error);
-    // Save error to sessionStorage whenever it changes
-    if (error) {
-      sessionStorage.setItem('loginError', error);
-    } else {
-      sessionStorage.removeItem('loginError');
-    }
-  }, [error]);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const authPayload = await authAPI.login(email, password);
-    onLogin(authPayload); // purely state / navigation
-  } catch (err) {
-    const errorMessage =
-      err.response?.data?.message ||
-      "Invalid credentials. Please try again.";
+    try {
+      // Call API - this saves to localStorage
+      await authAPI.login(email, password);
+      
+      // Immediately verify
+      const token = localStorage.getItem("adminToken");
+      const expiry = localStorage.getItem("adminExpiry");
+      
+      if (!token || !expiry) {
+        throw new Error("Authentication data was not saved properly");
+      }
+      
+      console.log("Login successful, token saved to localStorage");
+      
+      // Call parent handler
+      onLogin();
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Invalid credentials. Please try again.";
 
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setError(errorMessage);
+      
+      // Clean up
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+      localStorage.removeItem("adminExpiry");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const clearError = () => {
     setError('');
-    sessionStorage.removeItem('loginError');
   };
 
   return (

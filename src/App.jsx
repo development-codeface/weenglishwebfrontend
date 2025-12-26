@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import "./App.css";
 
@@ -46,6 +46,7 @@ const checkAuth = () => {
 function App() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(checkAuth);
+  const justLoggedIn = useRef(false);
 
   // =====================
   // SESSION EXPIRY WATCHER
@@ -54,6 +55,9 @@ function App() {
     if (!isAuthenticated) return;
 
     const interval = setInterval(() => {
+      // Skip check if we just logged in (give it 30 seconds to stabilize)
+      if (justLoggedIn.current) return;
+      
       if (!checkAuth()) {
         setIsAuthenticated(false);
         navigate("/login");
@@ -65,29 +69,46 @@ function App() {
   }, [isAuthenticated, navigate]);
 
   // =====================
-  // LOGIN HANDLER - FIXED
+  // LOGIN HANDLER
   // =====================
-  const handleLogin = (authPayload) => {
-    // Verify token was saved before proceeding
-    const token = localStorage.getItem("adminToken");
-    const expiry = localStorage.getItem("adminExpiry");
-    
-    if (!token || !expiry) {
-      console.error("Token not found in localStorage after login");
+  const handleLogin = () => {
+    // Double-check that localStorage has the token
+    if (!checkAuth()) {
+      console.error("Login failed: Token not in localStorage");
+      alert("Login failed. Please try again.");
       return;
     }
 
-    // Small delay to ensure localStorage is fully written
+    console.log("Login successful - setting authenticated state");
+    
+    // Set flag to prevent session watcher from interfering temporarily
+    justLoggedIn.current = true;
+    
+    // Update state
+    setIsAuthenticated(true);
+    
+    // Clear the flag after 30 seconds
     setTimeout(() => {
-      setIsAuthenticated(true);
-      navigate("/dashboard");
-    }, 100);
+      justLoggedIn.current = false;
+    }, 30000);
   };
+
+  // =====================
+  // EFFECT TO NAVIGATE AFTER AUTH STATE CHANGES
+  // =====================
+  useEffect(() => {
+    if (isAuthenticated && justLoggedIn.current) {
+      console.log("Auth state updated, navigating to dashboard");
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // =====================
   // LOGOUT HANDLER
   // =====================
   const handleLogout = () => {
+    justLoggedIn.current = false;
+    
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminUser");
     localStorage.removeItem("adminExpiry");
