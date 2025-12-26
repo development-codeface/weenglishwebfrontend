@@ -44,18 +44,33 @@ api.interceptors.response.use(
 
 // Auth APIs
 export const authAPI = {
- login: async (email, password) => {
-  const response = await api.post("/auth/login", { email, password });
-  const data = response.data.data || response.data;
+  login: async (email, password) => {
+    const response = await api.post("/auth/login", { email, password });
+    const data = response.data.data || response.data;
 
-  const expiryTime = Date.now() + 3 * 24 * 60 * 60 * 1000; 
+    if (!data.token) {
+      throw new Error('No token received from server');
+    }
 
-  localStorage.setItem("adminToken", data.token);
-  localStorage.setItem("adminUser", JSON.stringify(data.user));
-  localStorage.setItem("adminExpiry", expiryTime.toString());
+    const expiryTime = Date.now() + 3 * 24 * 60 * 60 * 1000;
 
-  return data;
-},
+    // Clear any existing auth data first
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    localStorage.removeItem("adminExpiry");
+
+    // Save new auth data
+    localStorage.setItem("adminToken", data.token);
+    localStorage.setItem("adminUser", JSON.stringify(data.user));
+    localStorage.setItem("adminExpiry", expiryTime.toString());
+
+    // Verify it was saved
+    if (!localStorage.getItem("adminToken")) {
+      throw new Error('Failed to save token to localStorage');
+    }
+
+    return data;
+  },
 };
 
 
