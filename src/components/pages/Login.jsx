@@ -39,11 +39,6 @@ const Login = ({ onLogin }) => {
         "Invalid credentials. Please try again.";
 
       setError(errorMessage);
-      
-      // Clean up
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      localStorage.removeItem("adminExpiry");
     } finally {
       setLoading(false);
     }
