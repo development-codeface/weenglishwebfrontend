@@ -21,6 +21,7 @@ const SubTopicAtoZ = () => {
     hint: { ...DEFAULT_MULTILINGUAL },
     imageUrl: "",
     imagePreview: "",
+    topic: "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -37,19 +38,30 @@ const SubTopicAtoZ = () => {
       ]);
 
       const subList = subRes.data.subTopics || [];
-      
-      console.log(subList);
-      
 
-      setSubTopics(
-        subList.map((item) => ({
-          ...item,
-          topicId: item.topic?._id || item.topicId || "",
-          question: item.question || { ...DEFAULT_MULTILINGUAL },
-          correctAnswers: item.correctAnswers || { ...DEFAULT_MULTILINGUAL },
-          fullWord: item.fullWord || { ...DEFAULT_MULTILINGUAL },
-        }))
-      );
+
+const mappedList = subList.map((item) => {
+  const topicObj = typeof item.topicId === "object" ? item.topicId : null;
+
+  return {
+    ...item,
+    topicId: topicObj?._id || (typeof item.topicId === "string" ? item.topicId : ""),
+    topic: topicObj?.title?.en || "No Title",
+    question: item.question || { ...DEFAULT_MULTILINGUAL },
+    correctAnswers: item.correctAnswers || { ...DEFAULT_MULTILINGUAL },
+    fullWord: item.fullWord || { ...DEFAULT_MULTILINGUAL },
+    hint: item.hint || { ...DEFAULT_MULTILINGUAL },
+  };
+});
+
+setSubTopics(mappedList);
+console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics now
+
+
+
+
+            
+
 
       setTopics(topicRes.data.topics || []);
     } catch (err) {
@@ -84,6 +96,9 @@ const SubTopicAtoZ = () => {
     setFormData({
       topicId: subTopic.topicId || "",
       question: normalize(subTopic.question),
+      topic: subTopic.topic || "", 
+    topic: subTopic.topicId?.title?.en || "",
+
       correctAnswers: normalize(subTopic.correctAnswers), // should already contain IDs
       fullWord: normalize(subTopic.fullWord),
       hint: normalize(subTopic.hint),
@@ -168,12 +183,11 @@ const SubTopicAtoZ = () => {
           "—"
         ),
     },
-{
-  key: "topicId",
-  label: "Topic",
-  render: (value) => value?.title?.en || "-"
-}
-,
+    {
+      key: "topic",
+      label: "Topic",
+      render: (value) => value,
+    },
     {
       key: "question",
       label: "Question",
@@ -217,7 +231,7 @@ const SubTopicAtoZ = () => {
             className="border p-2 rounded w-full"
             required
           >
-            <option value="">Select Topic</option>
+            <option value="">Select a topic</option>
             {topics.map((t) => (
               <option key={t._id} value={t._id}>
                 {t.title?.en}
@@ -232,13 +246,12 @@ const SubTopicAtoZ = () => {
           />
 
           {/* ✔ Dropdown Letter Input */}
-         <MultilingualInput
-  label="Correct Answer(s)"
-  value={formData.correctAnswers}
-  onChange={(v) => setFormData({ ...formData, correctAnswers: v })}
-  type="letters"
-/>
-
+          <MultilingualInput
+            label="Correct Answer(s)"
+            value={formData.correctAnswers}
+            onChange={(v) => setFormData({ ...formData, correctAnswers: v })}
+            type="letters"
+          />
 
           <MultilingualInput
             label="Full Word"
@@ -255,25 +268,24 @@ const SubTopicAtoZ = () => {
           <input
             type="file"
             accept="image/*"
-           onChange={(e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
 
-  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+              const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
-  if (file.size > MAX_SIZE) {
-    alert("Image size must be less than 10 MB");
-    e.target.value = "";
-    return;
-  }
+              if (file.size > MAX_SIZE) {
+                alert("Image size must be less than 10 MB");
+                e.target.value = "";
+                return;
+              }
 
-  setFormData({
-    ...formData,
-    imageUrl: file,
-    imagePreview: URL.createObjectURL(file),
-  });
-}}
-
+              setFormData({
+                ...formData,
+                imageUrl: file,
+                imagePreview: URL.createObjectURL(file),
+              });
+            }}
             className="border p-2 rounded w-full"
           />
 
