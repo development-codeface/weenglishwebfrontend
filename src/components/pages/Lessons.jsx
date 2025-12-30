@@ -51,9 +51,12 @@ const ensureVideoObj = (val) => {
 
 const buildMediaUrl = (path) => {
   if (!path) return "";
-  // Avoid double slashes
+  // If path already starts with http(s), return as-is
+  if (/^https?:\/\//i.test(path)) return path;
+  // Otherwise, prepend MEDIA_BASE
   return `${MEDIA_BASE}/${String(path).replace(/^\/+/, "")}`;
 };
+
 
 const Lessons = () => {
   const [lessons, setLessons] = useState([]);

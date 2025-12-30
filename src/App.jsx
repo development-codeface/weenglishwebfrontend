@@ -93,15 +93,6 @@ function App() {
     }, 30000);
   };
 
-  // =====================
-  // EFFECT TO NAVIGATE AFTER AUTH STATE CHANGES
-  // =====================
-  useEffect(() => {
-    if (isAuthenticated && justLoggedIn.current) {
-      console.log("Auth state updated, navigating to dashboard");
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   // =====================
   // LOGOUT HANDLER
