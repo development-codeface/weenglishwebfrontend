@@ -15,8 +15,9 @@ const GrammerSub = () => {
     topicId: "",
     title: { ...DEFAULT_MULTILINGUAL },
     description: { ...DEFAULT_MULTILINGUAL },
-    imageUrl: "",
-    imagePreview: "",
+    file: null,          // New file to upload
+    imageUrl: "",        // Existing S3 URL
+    imagePreview: "",    // Preview for frontend
   });
   const [saving, setSaving] = useState(false);
 
@@ -31,8 +32,6 @@ const GrammerSub = () => {
         topicsAPI.getAllLanguages(),
       ]);
       setSubtopics(subRes.data.data || []);
-      console.log("SubRes:",subRes.data);
-      
       setTopics(topicRes.data.topics || []);
     } finally {
       setLoading(false);
@@ -45,6 +44,7 @@ const GrammerSub = () => {
       topicId: "",
       title: { ...DEFAULT_MULTILINGUAL },
       description: { ...DEFAULT_MULTILINGUAL },
+      file: null,
       imageUrl: "",
       imagePreview: "",
     });
@@ -57,6 +57,7 @@ const GrammerSub = () => {
       topicId: item.topicId,
       title: item.title,
       description: item.description,
+      file: null,  // no new file selected yet
       imageUrl: item.imageUrl,
       imagePreview: item.imageUrl ? `${import.meta.env.VITE_API_URL_MEDIA}${item.imageUrl}` : "",
     });
@@ -73,21 +74,29 @@ const GrammerSub = () => {
     e.preventDefault();
     setSaving(true);
 
-    const form = new FormData();
-    form.append("topicId", formData.topicId);
-    form.append("title", JSON.stringify(formData.title));
-    form.append("description", JSON.stringify(formData.description));
-    if (formData.imageUrl instanceof File) form.append("imageUrl", formData.imageUrl);
+    try {
+      const form = new FormData();
+      form.append("topicId", formData.topicId);
+      form.append("title", JSON.stringify(formData.title));
+      form.append("description", JSON.stringify(formData.description));
 
-    if (selected) {
-      await grammarSubtopicsAPI.update(selected._id, form);
-    } else {
-      await grammarSubtopicsAPI.create(form);
+      // Only append file if a new one is selected
+      if (formData.file) form.append("imageUrl", formData.file);
+
+      if (selected) {
+        await grammarSubtopicsAPI.update(selected._id, form);
+      } else {
+        await grammarSubtopicsAPI.create(form);
+      }
+
+      setModalOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error saving subtopic:", err);
+      alert("Failed to save subtopic");
+    } finally {
+      setSaving(false);
     }
-
-    setModalOpen(false);
-    fetchData();
-    setSaving(false);
   };
 
   const columns = [
@@ -96,7 +105,10 @@ const GrammerSub = () => {
       label: "Image",
       render: (v) =>
         v ? (
-          <img src={`${import.meta.env.VITE_API_URL_MEDIA}${v}`} className="w-14 h-14 rounded object-cover border" />
+          <img
+            src={`${import.meta.env.VITE_API_URL_MEDIA}${v}`}
+            className="w-14 h-14 rounded object-cover border"
+          />
         ) : (
           "—"
         ),
@@ -118,7 +130,11 @@ const GrammerSub = () => {
         onDelete={handleDelete}
       />
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={selected ? "Edit Subtopic" : "Add Subtopic"}>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={selected ? "Edit Subtopic" : "Add Subtopic"}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <select
             value={formData.topicId}
@@ -132,39 +148,54 @@ const GrammerSub = () => {
             ))}
           </select>
 
-          <MultilingualInput label="Title" value={formData.title} onChange={(v) => setFormData({ ...formData, title: v })} />
-          <MultilingualInput label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({ ...formData, description: v })} />
+          <MultilingualInput
+            label="Title"
+            value={formData.title}
+            onChange={(v) => setFormData({ ...formData, title: v })}
+          />
+
+          <MultilingualInput
+            label="Description"
+            type="textarea"
+            value={formData.description}
+            onChange={(v) => setFormData({ ...formData, description: v })}
+          />
 
           <input
             type="file"
             accept="image/*"
-         onChange={(e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
 
-  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+              const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+              if (file.size > MAX_SIZE) {
+                alert("Image size must be less than 10 MB");
+                e.target.value = "";
+                return;
+              }
 
-  if (file.size > MAX_SIZE) {
-    alert("Image size must be less than 10 MB");
-    e.target.value = ""; // reset input
-    return;
-  }
-
-  setFormData({
-    ...formData,
-    imageUrl: file,
-    imagePreview: URL.createObjectURL(file),
-  });
-}}
-
+              setFormData({
+                ...formData,
+                file: file,
+                imagePreview: URL.createObjectURL(file),
+              });
+            }}
             className="border p-2 rounded w-full"
           />
 
           {formData.imagePreview && (
-            <img src={formData.imagePreview} className="h-32 rounded border object-cover mt-2" />
+            <img
+              src={formData.imagePreview}
+              className="h-32 rounded border object-cover mt-2"
+            />
           )}
 
-          <button type="submit" disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
             {saving ? "Saving..." : "Save"}
           </button>
         </form>
