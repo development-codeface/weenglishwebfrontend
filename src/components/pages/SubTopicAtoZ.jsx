@@ -9,22 +9,60 @@ const SubTopicAtoZ = () => {
   const [subTopics, setSubTopics] = useState([]);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedSubTopic, setSelectedSubTopic] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     topicId: "",
     question: { ...DEFAULT_MULTILINGUAL },
-    correctAnswers: { ...DEFAULT_MULTILINGUAL }, // ← now will store letter IDs
+    correctAnswers: { ...DEFAULT_MULTILINGUAL },
     fullWord: { ...DEFAULT_MULTILINGUAL },
     hint: { ...DEFAULT_MULTILINGUAL },
     imageUrl: "",
     imagePreview: "",
-    topic: "",
   });
 
-  const [saving, setSaving] = useState(false);
+  /* -------------------------------- HELPERS -------------------------------- */
+
+  const normalize = (value) => {
+    if (!value) return { ...DEFAULT_MULTILINGUAL };
+    if (typeof value === "string") return { en: value };
+    return value;
+  };
+
+  // ⭐ CRITICAL FIX
+  // Always convert populated objects → IDs
+  const normalizeCorrectAnswers = (value) => {
+    if (!value) return { ...DEFAULT_MULTILINGUAL };
+
+    const result = {};
+
+    for (const lang in value) {
+      const v = value[lang];
+
+      if (typeof v === "string") {
+        result[lang] = v;
+      } else if (typeof v === "object" && v?._id) {
+        result[lang] = v._id;
+      } else {
+        result[lang] = "";
+      }
+    }
+
+    return result;
+  };
+
+  const getText = (val) => {
+    if (!val) return "-";
+    return typeof val === "object"
+      ? val.en || Object.values(val)[0] || "-"
+      : val;
+  };
+
+  /* -------------------------------- FETCH -------------------------------- */
 
   useEffect(() => {
     fetchData();
@@ -39,30 +77,24 @@ const SubTopicAtoZ = () => {
 
       const subList = subRes.data.subTopics || [];
 
+      const mapped = subList.map((item) => {
+        const topicObj =
+          typeof item.topicId === "object" ? item.topicId : null;
 
-const mappedList = subList.map((item) => {
-  const topicObj = typeof item.topicId === "object" ? item.topicId : null;
+        return {
+          ...item,
+          topicId: topicObj?._id || item.topicId || "",
+          topic: topicObj?.title?.en || "—",
+          question: item.question || { ...DEFAULT_MULTILINGUAL },
+          correctAnswers: item.correctAnswers || {
+            ...DEFAULT_MULTILINGUAL,
+          },
+          fullWord: item.fullWord || { ...DEFAULT_MULTILINGUAL },
+          hint: item.hint || { ...DEFAULT_MULTILINGUAL },
+        };
+      });
 
-  return {
-    ...item,
-    topicId: topicObj?._id || (typeof item.topicId === "string" ? item.topicId : ""),
-    topic: topicObj?.title?.en || "No Title",
-    question: item.question || { ...DEFAULT_MULTILINGUAL },
-    correctAnswers: item.correctAnswers || { ...DEFAULT_MULTILINGUAL },
-    fullWord: item.fullWord || { ...DEFAULT_MULTILINGUAL },
-    hint: item.hint || { ...DEFAULT_MULTILINGUAL },
-  };
-});
-
-setSubTopics(mappedList);
-console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics now
-
-
-
-
-            
-
-
+      setSubTopics(mapped);
       setTopics(topicRes.data.topics || []);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -70,6 +102,8 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
       setLoading(false);
     }
   };
+
+  /* -------------------------------- CRUD -------------------------------- */
 
   const handleAdd = () => {
     setSelectedSubTopic(null);
@@ -85,21 +119,13 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
     setModalOpen(true);
   };
 
-  const normalize = (field) => {
-    if (typeof field === "string") return { en: field };
-    if (typeof field === "object") return field;
-    return { ...DEFAULT_MULTILINGUAL };
-  };
-
   const handleEdit = (subTopic) => {
     setSelectedSubTopic(subTopic);
+
     setFormData({
       topicId: subTopic.topicId || "",
       question: normalize(subTopic.question),
-      topic: subTopic.topic || "", 
-    topic: subTopic.topicId?.title?.en || "",
-
-      correctAnswers: normalize(subTopic.correctAnswers), // should already contain IDs
+      correctAnswers: normalizeCorrectAnswers(subTopic.correctAnswers),
       fullWord: normalize(subTopic.fullWord),
       hint: normalize(subTopic.hint),
       imageUrl: subTopic.imageUrl || "",
@@ -107,15 +133,15 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
         ? `${import.meta.env.VITE_API_URL_MEDIA}${subTopic.imageUrl}`
         : "",
     });
+
     setModalOpen(true);
   };
 
   const handleDelete = async (subTopic) => {
-    if (!window.confirm(`Delete this sub-topic?`)) return;
+    if (!window.confirm("Delete this sub-topic?")) return;
     try {
       await subTopicsAPI.delete(subTopic._id);
       fetchData();
-      alert("Deleted successfully");
     } catch (err) {
       console.error(err);
     }
@@ -130,7 +156,10 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
 
       form.append("topicId", formData.topicId);
       form.append("question", JSON.stringify(formData.question));
-      form.append("correctAnswers", JSON.stringify(formData.correctAnswers)); // IDs
+      form.append(
+        "correctAnswers",
+        JSON.stringify(formData.correctAnswers)
+      );
       form.append("fullWord", JSON.stringify(formData.fullWord));
       form.append("hint", JSON.stringify(formData.hint));
 
@@ -139,13 +168,9 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
       }
 
       if (selectedSubTopic) {
-        await subTopicsAPI.update(selectedSubTopic._id, form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await subTopicsAPI.update(selectedSubTopic._id, form);
       } else {
-        await subTopicsAPI.create(form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await subTopicsAPI.create(form);
       }
 
       setModalOpen(false);
@@ -158,12 +183,7 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
     }
   };
 
-  const getText = (val) => {
-    if (!val) return "-";
-    return typeof val === "object"
-      ? val.en || Object.values(val)[0] || "-"
-      : val;
-  };
+  /* -------------------------------- TABLE -------------------------------- */
 
   const columns = [
     {
@@ -172,11 +192,7 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
       render: (value) =>
         value ? (
           <img
-            src={
-              value.startsWith("http")
-                ? value
-                : `${import.meta.env.VITE_API_URL_MEDIA}${value}`
-            }
+            src={`${import.meta.env.VITE_API_URL_MEDIA}${value}`}
             className="w-12 h-12 rounded border object-cover"
           />
         ) : (
@@ -186,19 +202,20 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
     {
       key: "topic",
       label: "Topic",
-      render: (value) => value,
     },
     {
       key: "question",
       label: "Question",
-      render: (value) => getText(value),
+      render: getText,
     },
     {
       key: "fullWord",
       label: "Full Word",
-      render: (value) => getText(value),
+      render: getText,
     },
   ];
+
+  /* -------------------------------- UI -------------------------------- */
 
   return (
     <div className="space-y-6">
@@ -220,7 +237,7 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={selectedSubTopic ? "Edit" : "Add"}
+        title={selectedSubTopic ? "Edit Sub-Topic" : "Add Sub-Topic"}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           <select
@@ -242,41 +259,46 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
           <MultilingualInput
             label="Question"
             value={formData.question}
-            onChange={(v) => setFormData({ ...formData, question: v })}
+            onChange={(v) =>
+              setFormData({ ...formData, question: v })
+            }
           />
 
-          {/* ✔ Dropdown Letter Input */}
           <MultilingualInput
-            label="Correct Answer(s)"
-            value={formData.correctAnswers}
-            onChange={(v) => setFormData({ ...formData, correctAnswers: v })}
+            label="Correct Answer"
             type="letters"
+            value={formData.correctAnswers}
+            onChange={(v) =>
+              setFormData({ ...formData, correctAnswers: v })
+            }
           />
 
           <MultilingualInput
             label="Full Word"
             value={formData.fullWord}
-            onChange={(v) => setFormData({ ...formData, fullWord: v })}
+            onChange={(v) =>
+              setFormData({ ...formData, fullWord: v })
+            }
           />
 
           <MultilingualInput
             label="Hint"
             value={formData.hint}
-            onChange={(v) => setFormData({ ...formData, hint: v })}
+            onChange={(v) =>
+              setFormData({ ...formData, hint: v })
+            }
           />
 
           <input
             type="file"
             accept="image/*"
+            className="border p-2 rounded w-full"
             onChange={(e) => {
               const file = e.target.files[0];
               if (!file) return;
 
-              const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-
-              if (file.size > MAX_SIZE) {
-                alert("Image size must be less than 10 MB");
-                e.target.value = "";
+              if (file.size > 10 * 1024 * 1024) {
+                alert("Image must be under 10MB");
                 return;
               }
 
@@ -286,16 +308,12 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
                 imagePreview: URL.createObjectURL(file),
               });
             }}
-            className="border p-2 rounded w-full"
           />
 
-          {(formData.imagePreview || formData.imageUrl) && (
+          {formData.imagePreview && (
             <img
-              src={
-                formData.imagePreview ||
-                `${import.meta.env.VITE_API_URL_MEDIA}${formData.imageUrl}`
-              }
-              className="h-32 rounded border object-cover mt-2"
+              src={formData.imagePreview}
+              className="h-32 rounded border object-cover"
             />
           )}
 
@@ -313,3 +331,4 @@ console.log("Mapped subtopics:", mappedList.topic); // ✅ You will see topics n
 };
 
 export default SubTopicAtoZ;
+  
