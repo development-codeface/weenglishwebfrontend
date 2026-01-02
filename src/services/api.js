@@ -31,10 +31,21 @@ api.interceptors.response.use(
     const hadAuthHeader = !!error.config?.headers?.Authorization;
 
     if (error.response?.status === 401 && !isLogin && hadAuthHeader) {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      localStorage.removeItem("adminExpiry");
-    }
+  const loginAt = Number(localStorage.getItem("adminLoginAt"));
+  const now = Date.now();
+
+  // ⛔ Ignore 401s for first 5 seconds after login
+  if (loginAt && now - loginAt < 5000) {
+    console.warn("Ignoring 401 during login grace period");
+    return Promise.reject(error);
+  }
+
+  localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminUser");
+  localStorage.removeItem("adminExpiry");
+  localStorage.removeItem("adminLoginAt");
+}
+
 
     return Promise.reject(error);
   }

@@ -203,6 +203,7 @@ const Topics = () => {
               }
               required
             >
+              <option value="">Select Redirect Action</option>
               <option value="topic">Topic</option>
               <option value="mcq">MCQ</option>
             </select>
