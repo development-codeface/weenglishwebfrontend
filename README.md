@@ -1,16 +1,51 @@
-# weenglishwebfrontend
+# Weenglish
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a React application built using **Vite**, designed for fast development, clean architecture, and scalable production builds. The application consumes backend APIs and media assets through environment-based configuration.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Tech Stack
 
-## React Compiler
+- React
+- Vite
+- JavaScript
+- React Router
+- Axios
+- Tailwind CSS (if applicable)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 📦 Prerequisites
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Make sure you have the following installed:
+
+- Node.js (v16 or later recommended)
+- npm or yarn
+
+---
+
+## 📥 Installation
+
+Clone the repository and install dependencies:
+
+```bash
+npm install
+
+## 📥 Installation
+
+npm run dev
+
+The application will be available at: http://localhost:5173
+
+VITE_API_URL= backend url
+VITE_API_URL_MEDIA="" simply put a string
+VITE_API_URL_MEDIAA=s3 ulr
+
+#Generate a production build:
+npm run build
+
+#Preview the production build locally:
+npm run preview
+
+
+

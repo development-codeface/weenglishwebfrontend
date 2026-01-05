@@ -30,20 +30,8 @@ api.interceptors.response.use(
     const isLogin = error.config?.url?.includes("/auth/login");
     const hadAuthHeader = !!error.config?.headers?.Authorization;
 
-    if (error.response?.status === 401 && !isLogin && hadAuthHeader) {
-  const loginAt = Number(localStorage.getItem("adminLoginAt"));
-  const now = Date.now();
-
-  // ⛔ Ignore 401s for first 5 seconds after login
-  if (loginAt && now - loginAt < 5000) {
-    console.warn("Ignoring 401 during login grace period");
-    return Promise.reject(error);
-  }
-
-  localStorage.removeItem("adminToken");
-  localStorage.removeItem("adminUser");
-  localStorage.removeItem("adminExpiry");
-  localStorage.removeItem("adminLoginAt");
+   if (error.response?.status === 401 && !isLogin && hadAuthHeader) {
+  console.warn("401 received – letting app handle logout");
 }
 
 
@@ -74,6 +62,8 @@ export const authAPI = {
     localStorage.setItem("adminToken", data.token);
     localStorage.setItem("adminUser", JSON.stringify(data.user));
     localStorage.setItem("adminExpiry", expiryTime.toString());
+    localStorage.setItem("adminLoginAt", Date.now().toString());
+
 
     // Verify it was saved
     if (!localStorage.getItem("adminToken")) {
