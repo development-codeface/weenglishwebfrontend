@@ -156,7 +156,7 @@ const columns = [
     render: (value) =>
       value ? (
         <img
-          src={`${import.meta.env.VITE_API_URL_MEDIA}${value}`}
+          src={value}
           alt="Thumbnail"
           className="w-16 h-16 object-cover rounded-md border"
         />

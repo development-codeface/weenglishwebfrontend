@@ -131,7 +131,7 @@ const Topics = () => {
       render: (value) =>
         value ? (
           <img
-            src={`${import.meta.env.VITE_API_URL_MEDIA}${value}`}
+            src={value}
             alt="Topic"
             className="w-14 h-14 object-cover rounded border"
           />

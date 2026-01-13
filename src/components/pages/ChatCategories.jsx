@@ -156,7 +156,7 @@ const fetchCategories = async () => {
         src={
           value.startsWith("http")
             ? value
-            : `${import.meta.env.VITE_API_URL_MEDIA}${value}`
+            : value
         }
         alt="Category"
         className="w-12 h-12 object-cover rounded-md border"

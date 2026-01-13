@@ -110,7 +110,7 @@ const Users = () => {
               src={
                 value.startsWith("http")
                   ? value
-                  : `${import.meta.env.VITE_API_URL_MEDIA}${value}`
+                  : value
               }
               alt={user?.name || "User Avatar"}
               className="h-10 w-10 rounded-full object-cover border-2 border-cyan-200"

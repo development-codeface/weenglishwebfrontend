@@ -192,7 +192,7 @@ const SubTopicAtoZ = () => {
       render: (value) =>
         value ? (
           <img
-            src={`${import.meta.env.VITE_API_URL_MEDIA}${value}`}
+            src={value}
             className="w-12 h-12 rounded border object-cover"
           />
         ) : (

@@ -181,7 +181,7 @@ const Discounts = () => {
       render: (value) =>
         value ? (
           <img
-            src={`${import.meta.env.VITE_API_URL_MEDIA}${value}`}
+            src={value}
             className="w-12 h-12 object-cover rounded border"
           />
         ) : "—",
