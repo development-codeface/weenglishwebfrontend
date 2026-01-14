@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DataTable from "../common/DataTable";
 import Modal from "../common/Modal";
 import { UsersAPI } from "../../services/api";
-import { CheckCircle, XCircle, Calendar, Crown } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, Crown, Power } from "lucide-react";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -10,10 +10,9 @@ const Users = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [onboardingData, setOnboardingData] = useState(null);
-
-  // ✅ NEW: Role edit state
   const [editingRole, setEditingRole] = useState(false);
   const [newRole, setNewRole] = useState("");
+  const [togglingUser, setTogglingUser] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -33,7 +32,7 @@ const Users = () => {
 
   const handleView = async (user) => {
     setSelectedUser(user);
-    setNewRole(user.role);          // ✅ init role
+    setNewRole(user.role);
     setEditingRole(false);
 
     try {
@@ -64,7 +63,6 @@ const Users = () => {
     }
   };
 
-  // ✅ NEW: ROLE UPDATE HANDLER
   const handleRoleUpdate = async () => {
     if (!selectedUser || newRole === selectedUser.role) {
       setEditingRole(false);
@@ -90,6 +88,42 @@ const Users = () => {
     }
   };
 
+  // NEW: Toggle user active status
+  const handleToggleActive = async (user) => {
+    const newStatus = !user.active;
+    const action = newStatus ? "activate" : "deactivate";
+    
+    if (
+      window.confirm(
+        `Are you sure you want to ${action} user "${user.name}"?`
+      )
+    ) {
+      setTogglingUser(user._id);
+      try {
+        await UsersAPI.deactivateUser(user._id);
+        
+        // Update users list
+        setUsers((prev) =>
+          prev.map((u) =>
+            u._id === user._id ? { ...u, active: newStatus } : u
+          )
+        );
+
+        // Update selected user if viewing
+        if (selectedUser?._id === user._id) {
+          setSelectedUser((prev) => ({ ...prev, active: newStatus }));
+        }
+
+        alert(`User ${action}d successfully`);
+      } catch (error) {
+        console.error(`Error ${action}ing user:`, error);
+        alert(`Failed to ${action} user`);
+      } finally {
+        setTogglingUser(null);
+      }
+    }
+  };
+
   const formatDate = (date) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("en-US", {
@@ -107,11 +141,7 @@ const Users = () => {
         <div className="flex items-center">
           {value ? (
             <img
-              src={
-                value.startsWith("http")
-                  ? value
-                  : value
-              }
+              src={value.startsWith("http") ? value : value}
               alt={user?.name || "User Avatar"}
               className="h-10 w-10 rounded-full object-cover border-2 border-cyan-200"
             />
@@ -152,6 +182,27 @@ const Users = () => {
           {value === "admin" && <Crown size={12} className="inline mr-1" />}
           {value.toUpperCase()}
         </span>
+      ),
+    },
+    {
+      key: "active",
+      label: "Status",
+      render: (value, user) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleActive(user);
+          }}
+          disabled={togglingUser === user._id}
+          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center w-fit transition-all ${
+            value
+              ? "bg-green-100 text-green-800 hover:bg-green-200"
+              : "bg-red-100 text-red-800 hover:bg-red-200"
+          } ${togglingUser === user._id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        >
+          <Power size={12} className="mr-1" />
+          {value ? "Active" : "Inactive"}
+        </button>
       ),
     },
     {
@@ -216,8 +267,7 @@ const Users = () => {
       >
         {selectedUser && (
           <div className="space-y-6">
-
-            {/* ✅ USER PROFILE HEADER + ROLE EDIT */}
+            {/* USER PROFILE HEADER + STATUS BADGE */}
             <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-6">
               <div className="flex items-start space-x-6">
                 {selectedUser.profileImage ? (
@@ -233,11 +283,27 @@ const Users = () => {
                 )}
 
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                    {selectedUser.name}
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {selectedUser.name}
+                    </h2>
+                    
+                    {/* Active Status Badge */}
+                    <button
+                      onClick={() => handleToggleActive(selectedUser)}
+                      disabled={togglingUser === selectedUser._id}
+                      className={`px-4 py-2 rounded-lg font-semibold flex items-center transition-all ${
+                        selectedUser.active
+                          ? "bg-green-500 text-white hover:bg-green-600"
+                          : "bg-red-500 text-white hover:bg-red-600"
+                      } ${togglingUser === selectedUser._id ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <Power size={16} className="mr-2" />
+                      {selectedUser.active ? "Active" : "Inactive"}
+                    </button>
+                  </div>
 
-                  {/* ✅ ROLE EDIT CONTROLS */}
+                  {/* ROLE EDIT CONTROLS */}
                   <div className="mt-3 flex items-center space-x-3">
                     {!editingRole ? (
                       <>
@@ -253,7 +319,7 @@ const Users = () => {
 
                         <button
                           onClick={() => setEditingRole(true)}
-                          className="px-3 py-1 bg-gray-200 rounded-lg text-xs font-semibold"
+                          className="px-3 py-1 bg-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-300"
                         >
                           Change Role
                         </button>
@@ -271,7 +337,7 @@ const Users = () => {
 
                         <button
                           onClick={handleRoleUpdate}
-                          className="px-3 py-1 bg-green-600 text-white rounded"
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                         >
                           Save
                         </button>
@@ -281,7 +347,7 @@ const Users = () => {
                             setNewRole(selectedUser.role);
                             setEditingRole(false);
                           }}
-                          className="px-3 py-1 bg-gray-300 rounded"
+                          className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
                         >
                           Cancel
                         </button>
@@ -291,7 +357,6 @@ const Users = () => {
                 </div>
               </div>
             </div>
-
 
             {/* Subscription Details */}
             {selectedUser.subscription && (
@@ -386,7 +451,6 @@ const Users = () => {
                           Q{idx + 1}: {q}
                         </p>
 
-                        {/* Selected Options */}
                         <div className="space-y-2">
                           {ans.options
                             .filter((opt) => selectedIds.includes(opt._id))
@@ -464,7 +528,7 @@ const Users = () => {
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {selectedUser.usageHistory
                       .slice()
-                      .reverse() // newest → oldest
+                      .reverse()
                       .slice(0, 5)
                       .map((date, index) => (
                         <div

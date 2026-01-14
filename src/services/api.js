@@ -145,6 +145,7 @@ export const UsersAPI = {
   // NEW: fetch user + onboarding answers in one call
   getUserWithOnboarding: (id) => api.get(`/users/${id}`),
   updateRole: (id, role) => api.put(`/users/${id}`, { role }),
+  deactivateUser: (id) => api.put(`/users/deactivate/${id}`),
 };
 
 export const paymentsAPI = {
@@ -164,6 +165,7 @@ export const onBoardingAPI = createCRUD("/onboarding-questions");
 export const grammarSubtopicsAPI = createCRUD("/grammar-subtopics");
 export const languagesAPI = createCRUD("/languages");
 export const nativeLang = createCRUD("/native-languages");
+
 export const pushNotificationsAPI = {
   getAll: () => api.get("/push-notifications/all"),
   create: (data) => api.post("/push/push-to-all", data),
