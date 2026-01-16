@@ -148,18 +148,14 @@ export const UsersAPI = {
   deactivateUser: (id) => api.put(`/users/deactivate/${id}`),
 };
 
-export const paymentsAPI = {
-  getAll: () => api.get("/payments"),
-  getById: (id) => api.get(`/payments/${id}`),
-  update: (id, data) => api.put(`/payments/${id}`, data),
-  delete: (id) => api.delete(`/payments/${id}`),
-  getMyPayments: () => api.get("/payments/me"),
+export const rechargeAPI = {
+  getAllHistory: () => api.get("/daily-limit/admin/recharge-history"),
 };
 
 export const subTopicsAPI = createCRUD("/atoz");
 export const chatCategoriesAPI = createCRUD("/chat-categories");
 export const quizzesAPI = createCRUD("/quizzes");
-export const subscriptionsAPI = createCRUD("/subscriptions");
+export const subscriptionsAPI = createCRUD("/plans");
 export const discountsAPI = createCRUD("/discounts");
 export const onBoardingAPI = createCRUD("/onboarding-questions");
 export const grammarSubtopicsAPI = createCRUD("/grammar-subtopics");

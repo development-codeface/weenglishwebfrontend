@@ -59,7 +59,7 @@ const GrammerSub = () => {
       description: item.description,
       file: null,  // no new file selected yet
       imageUrl: item.imageUrl,
-      imagePreview: item.imageUrl ? `${import.meta.env.VITE_API_URL_MEDIA}${item.imageUrl}` : "",
+      imagePreview: item.imageUrl ? item.imageUrl : "",
     });
     setModalOpen(true);
   };
@@ -106,7 +106,7 @@ const GrammerSub = () => {
       render: (v) =>
         v ? (
           <img
-            src={`${import.meta.env.VITE_API_URL_MEDIA}${v}`}
+            src={v}
             className="w-14 h-14 rounded object-cover border"
           />
         ) : (

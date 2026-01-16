@@ -78,7 +78,7 @@ const AdminSidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       path: "/subscriptions",
       icon: "DollarSign",
     },
-    { id: "discounts", label: "Discounts", path: "/discounts", icon: "Tag" },
+    // { id: "discounts", label: "Discounts", path: "/discounts", icon: "Tag" },
     {
       id: "onboarding",
       label: "OnBoarding",
